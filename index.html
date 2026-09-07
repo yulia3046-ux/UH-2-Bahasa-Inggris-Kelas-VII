@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuis Interaktif Bahasa Inggris Kelas VII</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: linear-gradient(135deg, #2b1055 0%, #7597de 100%);
+            min-height: 100vh;
+        }
+        .quiz-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+        .option-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .option-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+            }
+            #app {
+                max-width: 100% !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .quiz-card {
+                box-shadow: none !important;
+                border: none !important;
+                background: white !important;
+            }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center p-3 sm:p-6 text-slate-800">
+
+    <div id="app" class="w-full max-w-3xl">
+        
+        <!-- ================= START SCREEN ================= -->
+        <div id="start-screen" class="quiz-card rounded-2xl p-6 sm:p-10 shadow-2xl border border-white/20">
+            <div class="text-center">
+                <div class="inline-block p-4 bg-purple-100 rounded-full mb-4 text-purple-600">
+                    <i class="fa-solid fa-graduation-cap text-4xl sm:text-5xl"></i>
+                </div>
+                <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-2">English Assessment</h1>
+                <p class="text-slate-600 mb-6 font-medium">Ulangan Harian 2 • Kelas VII (Fase D)</p>
+            </div>
+            
+            <!-- User Info Form -->
+            <form id="student-form" onsubmit="event.preventDefault(); quizApp.startQuiz();" class="space-y-4 mb-6 bg-slate-50 p-5 rounded-xl border border-slate-200">
+                <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-user-pen text-purple-600"></i> Identitas Siswa
+                </h3>
+                <div>
+                    <label for="student-name" class="block text-xs font-bold text-slate-600 mb-1">NAMA LENGKAP <span class="text-rose-500">*</span></label>
+                    <input type="text" id="student-name" required placeholder="Masukkan nama lengkap siswa..." class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-500 text-slate-800 font-semibold text-sm">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label for="student-class" class="block text-xs font-bold text-slate-600 mb-1">KELAS / NO. ABSEN</label>
+                        <input type="text" id="student-class" placeholder="Contoh: VII-A / 12" class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-500 text-slate-800 font-semibold text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">PETUNJUK KUIS</label>
+                        <div class="text-xs text-slate-500 bg-white p-2.5 rounded border border-slate-200 font-medium">
+                            30 Soal Pilihan Ganda • Tanpa Batas Waktu • Laporan Nilai Otomatis
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="w-full py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-purple-500/30 transition duration-200 flex items-center justify-center gap-3">
+                    <i class="fa-solid fa-play"></i> Mulai Kerjakan Kuis
+                </button>
+            </form>
+        </div>
+
+        <!-- ================= QUIZ SCREEN ================= -->
+        <div id="quiz-screen" class="hidden quiz-card rounded-2xl p-4 sm:p-8 shadow-2xl border border-white/20 relative overflow-hidden">
+            
+            <!-- Top Header Stats -->
+            <div class="flex items-center justify-between mb-6 border-b pb-4 border-slate-200">
+                <div class="flex items-center gap-3">
+                    <span id="question-count" class="bg-purple-100 text-purple-700 px-3.5 py-1.5 rounded-full font-bold text-xs sm:text-sm">
+                        Soal 1 / 30
+                    </span>
+                    <span class="text-xs text-slate-400 font-semibold hidden sm:inline-block">
+                        <i class="fa-regular fa-clock"></i> Santai, Tanpa Timer
+                    </span>
+                </div>
+                <div class="flex items-center gap-2 text-slate-700 font-extrabold text-lg sm:text-xl">
+                    <i class="fa-solid fa-trophy text-amber-500"></i>
+                    <span id="score-display">0</span> <span class="text-xs font-normal text-slate-400">Poin</span>
+                </div>
+            </div>
+
+            <!-- Passages / Context Container (If present) -->
+            <div id="context-box" class="hidden mb-4 p-4 bg-indigo-50/80 rounded-xl border border-indigo-100 text-slate-700 text-sm sm:text-base leading-relaxed max-h-48 overflow-y-auto">
+            </div>
+
+            <!-- Question Text -->
+            <h2 id="question-text" class="text-lg sm:text-xl font-bold text-slate-800 mb-6 leading-snug">
+                Question goes here...
+            </h2>
+
+            <!-- Options Grid -->
+            <div id="options-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                <!-- Buttons injected dynamically -->
+            </div>
+
+            <!-- Explanation Feedback Box -->
+            <div id="explanation-box" class="hidden mt-4 p-4 rounded-xl text-sm font-medium transition-all"></div>
+
+            <!-- Next Button Container -->
+            <div id="next-btn-container" class="hidden mt-4 text-right">
+                <button onclick="quizApp.nextQuestion()" class="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl shadow-md transition flex items-center gap-2 ml-auto">
+                    Lanjut <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- ================= RESULT SCREEN ================= -->
+        <div id="result-screen" class="hidden quiz-card rounded-2xl p-6 sm:p-10 shadow-2xl border border-white/20">
+            <div class="text-center">
+                <div class="inline-block p-4 bg-amber-100 rounded-full mb-3 text-amber-500">
+                    <i class="fa-solid fa-award text-5xl"></i>
+                </div>
+                <h1 class="text-3xl font-extrabold text-slate-900 mb-1">Hasil Evaluasi Belajar</h1>
+                <p class="text-slate-600 mb-6 text-sm">Ulangan Harian 2 • Bahasa Inggris Kelas VII</p>
+            </div>
+
+            <!-- Student Identity Card -->
+            <div class="bg-purple-50/80 rounded-xl p-4 mb-6 border border-purple-200 flex flex-col sm:flex-row justify-between sm:items-center gap-2 text-slate-800">
+                <div>
+                    <p class="text-xs text-purple-600 font-bold uppercase tracking-wider">Nama Siswa</p>
+                    <p id="res-student-name" class="text-lg font-extrabold text-slate-900">-</p>
+                </div>
+                <div>
+                    <p class="text-xs text-purple-600 font-bold uppercase tracking-wider">Kelas / Absen</p>
+                    <p id="res-student-class" class="text-base font-bold text-slate-800">-</p>
+                </div>
+                <div>
+                    <p class="text-xs text-purple-600 font-bold uppercase tracking-wider">Tanggal</p>
+                    <p id="res-date" class="text-sm font-bold text-slate-700">-</p>
+                </div>
+            </div>
+
+            <!-- Score Cards Grid -->
+            <div class="grid grid-cols-3 gap-3 mb-6">
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 text-center">
+                    <p class="text-xs text-slate-500 font-semibold uppercase">Nilai Akhir</p>
+                    <p id="final-grade" class="text-3xl sm:text-4xl font-black text-indigo-600">0</p>
+                    <span class="text-[10px] text-slate-400">Skala 100</span>
+                </div>
+                <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100 text-center">
+                    <p class="text-xs text-slate-500 font-semibold uppercase">Jawaban Benar</p>
+                    <p id="final-correct" class="text-3xl sm:text-4xl font-black text-emerald-600">0 / 30</p>
+                    <span class="text-[10px] text-slate-400">Soal</span>
+                </div>
+                <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 text-center">
+                    <p class="text-xs text-slate-500 font-semibold uppercase">Akurasi</p>
+                    <p id="final-accuracy" class="text-3xl sm:text-4xl font-black text-blue-600">0%</p>
+                    <span class="text-[10px] text-slate-400">Persentase</span>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row gap-3 no-print">
+                <button onclick="window.print()" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-print"></i> Cetak / Simpan PDF
+                </button>
+                <button onclick="quizApp.toggleReview()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl shadow-sm transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-list-check"></i> Lihat Pembahasan
+                </button>
+                <button onclick="quizApp.restartQuiz()" class="flex-1 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl shadow transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-rotate-right"></i> Ulangi Kuis
+                </button>
+            </div>
+
+            <!-- Detailed Review Drawer -->
+            <div id="review-container" class="hidden mt-8 text-left border-t border-slate-200 pt-6 max-h-96 overflow-y-auto space-y-4">
+                <h3 class="text-lg font-bold text-slate-800 mb-2">Pembahasan Soal Detail:</h3>
+                <div id="review-list" class="space-y-4"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Sound Synthesis using Web Audio API
+        class SoundFX {
+            constructor() {
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            playCorrect() {
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.1);
+                osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.2);
+                
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc.start(now);
+                osc.stop(now + 0.3);
+            }
+
+            playWrong() {
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.linearRampToValueAtTime(110, now + 0.25);
+                
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc.start(now);
+                osc.stop(now + 0.25);
+            }
+        }
+
+        // Questions Data
+        const questionsData = [
+            {
+                id: 1,
+                context: "<b>Dion:</b> Good afternoon, Nina!<br><b>Nina:</b> Good afternoon, Dion! You look tired. Did you just finish physical education class?<br><b>Dion:</b> Yes, we played volleyball on the school field. It was fun!<br><b>Nina:</b> That sounds awesome. Well, the break is almost over. I have to go back to my classroom. See you later!<br><b>Dion:</b> See you, Nina!",
+                question: "1. When does the conversation take place?",
+                options: ["In the morning", "In the afternoon", "In the evening", "At night"],
+                answer: 1,
+                explanation: "Percakapan diawali dengan sapaan 'Good afternoon' yang menandakan waktu siang/sore hari."
+            },
+            {
+                id: 2,
+                context: "<b>Dion:</b> Good afternoon, Nina!<br><b>Nina:</b> Good afternoon, Dion! You look tired. Did you just finish physical education class?<br><b>Dion:</b> Yes, we played volleyball on the school field. It was fun!<br><b>Nina:</b> That sounds awesome. Well, the break is almost over. I have to go back to my classroom. See you later!<br><b>Dion:</b> See you, Nina!",
+                question: "2. Which expression shows a farewell response from Dion?",
+                options: ["Good afternoon, Nina!", "You look tired.", "That sounds awesome.", "See you, Nina!"],
+                answer: 3,
+                explanation: "Ucapan 'See you, Nina!' merupakan ungkapan balasan salam perpisahan (farewell response)."
+            },
+            {
+                id: 3,
+                context: "<b>Dion:</b> Good afternoon, Nina!<br><b>Nina:</b> Good afternoon, Dion! You look tired. Did you just finish physical education class?<br><b>Dion:</b> Yes, we played volleyball on the school field. It was fun!<br><b>Nina:</b> That sounds awesome. Well, the break is almost over. I have to go back to my classroom. See you later!<br><b>Dion:</b> See you, Nina!",
+                question: "3. Why does Nina leave Dion at the end of the dialogue?",
+                options: ["She feels tired after playing volleyball.", "She wants to play volleyball on the field.", "The break time is ending and class is starting soon.", "Dion asks her to leave immediately."],
+                answer: 2,
+                explanation: "Nina pergi karena waktu istirahat hampir selesai ('the break is almost over. I have to go back to my classroom')."
+            },
+            {
+                id: 4,
+                context: "<b>Farah:</b> Hi, Bayu! How are you doing?<br><b>Bayu:</b> Hi, Farah! I’m great, thanks! How about you?<br><b>Farah:</b> I’m fine too. Don’t forget about our group discussion tomorrow at 3 PM!<br><b>Bayu:</b> Noted! Thanks for reminding me. Good night, Farah!<br><b>Farah:</b> Good night, Bayu! Sleep well.",
+                question: "4. How does Bayu respond when Farah asks about his condition?",
+                options: ["Noted!", "I'm great, thanks!", "Sleep well.", "Good night!"],
+                answer: 1,
+                explanation: "Saat ditanya kabar ('How are you doing?'), Bayu menjawab 'I'm great, thanks!'."
+            },
+            {
+                id: 5,
+                context: "<b>Farah:</b> Hi, Bayu! How are you doing?<br><b>Bayu:</b> Hi, Farah! I’m great, thanks! How about you?<br><b>Farah:</b> I’m fine too. Don’t forget about our group discussion tomorrow at 3 PM!<br><b>Bayu:</b> Noted! Thanks for reminding me. Good night, Farah!<br><b>Farah:</b> Good night, Bayu! Sleep well.",
+                question: "5. What is the purpose of Farah’s message to Bayu?",
+                options: ["To ask for help with homework", "To invite him to play games", "To remind him about tomorrow's group discussion", "To say goodbye for the weekend"],
+                answer: 2,
+                explanation: "Tujuan Farah mengirim pesan adalah untuk mengingatkan tentang diskusi kelompok besok jam 3 sore."
+            },
+            {
+                id: 6,
+                context: "Hello everyone! My name is Galang Putra. You can call me Galang. I am 12 years old and I am a new student at SMP Merdeka. I live in Semarang with my parents and my elder sister. My favorite hobby is playing football, and my dream is to be a professional football player. It’s great to meet you all!",
+                question: "6. What is Galang’s nickname?",
+                options: ["Putra", "Galang", "Merdeka", "Semarang"],
+                answer: 1,
+                explanation: "Galang menyebutkan 'You can call me Galang', yang berarti nama panggilannya adalah Galang."
+            },
+            {
+                id: 7,
+                context: "Hello everyone! My name is Galang Putra. You can call me Galang. I am 12 years old and I am a new student at SMP Merdeka. I live in Semarang with my parents and my elder sister. My favorite hobby is playing football, and my dream is to be a professional football player. It’s great to meet you all!",
+                question: "7. How many siblings does Galang have?",
+                options: ["None", "One elder sister", "One younger brother", "Two sisters"],
+                answer: 1,
+                explanation: "Galang menyebutkan ia tinggal bersama 'my parents and my elder sister' (satu kakak perempuan)."
+            },
+            {
+                id: 8,
+                context: "Hello everyone! My name is Galang Putra. You can call me Galang. I am 12 years old and I am a new student at SMP Merdeka. I live in Semarang with my parents and my elder sister. My favorite hobby is playing football, and my dream is to be a professional football player. It’s great to meet you all!",
+                question: "8. Galang wants to be a professional football player because _______.",
+                options: ["he likes watching sports on TV", "his father asks him to do so", "playing football is his favorite hobby", "he lives in Semarang"],
+                answer: 2,
+                explanation: "Bermain sepak bola adalah hobi favoritnya, sehingga ia bercita-cita menjadi pemain profesional."
+            },
+            {
+                id: 9,
+                context: "Hello everyone! My name is Galang Putra. You can call me Galang. I am 12 years old and I am a new student at SMP Merdeka. I live in Semarang with my parents and my elder sister. My favorite hobby is playing football, and my dream is to be a professional football player. It’s great to meet you all!",
+                question: "9. Which statement is TRUE according to Galang's introduction?",
+                options: ["Galang lives alone in Semarang.", "Galang is a Grade 7 student at SMP Merdeka.", "Galang has two younger brothers.", "Galang does not enjoy sports."],
+                answer: 1,
+                explanation: "Galang adalah siswa baru berumur 12 tahun di SMP Merdeka, yang berarti ia duduk di kelas 7."
+            },
+            {
+                id: 10,
+                context: "<b>Citra:</b> Hello, Edo! Introduce my friend, this is Maya. She is our new neighbor.<br><b>Edo:</b> Hi, Maya! Nice to meet you. I’m Edo.<br><b>Maya:</b> Hi, Edo! Nice to meet you too.<br><b>Edo:</b> Are you in the same school as Citra?<br><b>Maya:</b> Yes, I am in Class 7B, while Citra is in Class 7A.",
+                question: "10. Who introduces Maya to Edo?",
+                options: ["Maya herself", "Citra", "Class 7B teacher", "Edo’s neighbor"],
+                answer: 1,
+                explanation: "Citra yang memperkenalkan Maya kepada Edo ('Citra: Hello, Edo! Introduce my friend, this is Maya.')."
+            },
+            {
+                id: 11,
+                context: "<b>Citra:</b> Hello, Edo! Introduce my friend, this is Maya. She is our new neighbor.<br><b>Edo:</b> Hi, Maya! Nice to meet you. I’m Edo.<br><b>Maya:</b> Hi, Edo! Nice to meet you too.<br><b>Edo:</b> Are you in the same school as Citra?<br><b>Maya:</b> Yes, I am in Class 7B, while Citra is in Class 7A.",
+                question: "11. What is the relationship between Citra and Maya?",
+                options: ["Sisters", "Cousins", "Schoolmates and neighbors", "Teacher and student"],
+                answer: 2,
+                explanation: "Citra dan Maya adalah tetangga (neighbor) dan satu sekolah (schoolmates)."
+            },
+            {
+                id: 12,
+                context: "<b>Citra:</b> Hello, Edo! Introduce my friend, this is Maya. She is our new neighbor.<br><b>Edo:</b> Hi, Maya! Nice to meet you. I’m Edo.<br><b>Maya:</b> Hi, Edo! Nice to meet you too.<br><b>Edo:</b> Are you in the same school as Citra?<br><b>Maya:</b> Yes, I am in Class 7B, while Citra is in Class 7A.",
+                question: "12. From the dialogue, we can conclude that Edo, Citra, and Maya _______.",
+                options: ["go to different schools", "live in the same neighborhood", "are all in Class 7A", "have known each other for years"],
+                answer: 1,
+                explanation: "Citra mengatakan Maya adalah 'our new neighbor', mengindikasikan mereka bertiga tinggal di lingkungan yang sama."
+            },
+            {
+                id: 13,
+                context: null,
+                question: "13. Read the sentence: 'I have a cute cat. _______ fur is soft and white.'",
+                options: ["His", "Her", "Its", "Their"],
+                answer: 2,
+                explanation: "Kata ganti kepunyaan (possessive adjective) untuk hewan tunggal 'a cat' adalah 'Its'."
+            },
+            {
+                id: 14,
+                context: null,
+                question: "14. Read the sentence: 'Sinta and Tari love sports. _______ favorite activity is playing badminton.'",
+                options: ["Our", "Their", "Her", "Your"],
+                answer: 1,
+                explanation: "Subjek jamak 'Sinta and Tari' (mereka) menggunakan possessive adjective 'Their'."
+            },
+            {
+                id: 15,
+                context: null,
+                question: "15. 'My brother has a new laptop. He keeps _______ laptop inside a black bag.'",
+                options: ["his", "him", "he", "her"],
+                answer: 0,
+                explanation: "Possessive adjective untuk laki-laki tunggal (My brother / He) adalah 'his'."
+            },
+            {
+                id: 16,
+                context: null,
+                question: "16. 'My school garden is very _______. There are colorful flowers and clean green grass everywhere.'",
+                options: ["dirty", "beautiful", "noisy", "dark"],
+                answer: 1,
+                explanation: "Deskripsi 'colorful flowers and clean green grass' menunjukkan bahwa tamannya sangat indah (beautiful)."
+            },
+            {
+                id: 17,
+                context: null,
+                question: "17. Choose the sentence with the correct order of adjectives:",
+                options: ["She wears a silk red long dress.", "She wears a long red silk dress.", "She wears a red silk long dress.", "She wears a silk long red dress."],
+                answer: 1,
+                explanation: "Urutan Adjective: Size (long) -> Color (red) -> Material (silk)."
+            },
+            {
+                id: 18,
+                context: "Hi, I am Kirana. I would like to tell you about my family. My family is small but warm. My father, Mr. Rahmad, is an English teacher. He is tall and wears glasses. He loves reading books. My mother, Mrs. Dewi, is a chef. She cooks delicious food for us every day. Her hobby is gardening. I also have a younger brother named Rizky. He is 8 years old. His favorite hobby is playing with Lego bricks. On weekends, we love spending time together in our living room.",
+                question: "18. What does Kirana’s father do?",
+                options: ["A chef", "An English teacher", "A doctor", "A gardener"],
+                answer: 1,
+                explanation: "Ayah Kirana (Mr. Rahmad) bekerja sebagai guru bahasa Inggris ('is an English teacher')."
+            },
+            {
+                id: 19,
+                context: "Hi, I am Kirana. I would like to tell you about my family. My family is small but warm. My father, Mr. Rahmad, is an English teacher. He is tall and wears glasses. He loves reading books. My mother, Mrs. Dewi, is a chef. She cooks delicious food for us every day. Her hobby is gardening. I also have a younger brother named Rizky. He is 8 years old. His favorite hobby is playing with Lego bricks. On weekends, we love spending time together in our living room.",
+                question: "19. What is Mrs. Dewi’s hobby?",
+                options: ["Cooking", "Reading books", "Gardening", "Playing Lego"],
+                answer: 2,
+                explanation: "Meskipun profesinya chef, hobi Mrs. Dewi adalah berkebun ('Her hobby is gardening')."
+            },
+            {
+                id: 20,
+                context: "Hi, I am Kirana. I would like to tell you about my family. My family is small but warm. My father, Mr. Rahmad, is an English teacher. He is tall and wears glasses. He loves reading books. My mother, Mrs. Dewi, is a chef. She cooks delicious food for us every day. Her hobby is gardening. I also have a younger brother named Rizky. He is 8 years old. His favorite hobby is playing with Lego bricks. On weekends, we love spending time together in our living room.",
+                question: "20. What is Kirana’s brother like based on the text?",
+                options: ["He is 12 years old and loves football.", "He is 8 years old and likes Lego.", "He is an English teacher.", "He is tall and wears glasses."],
+                answer: 1,
+                explanation: "Adik Kirana berumur 8 tahun dan hobinya bermain Lego."
+            },
+            {
+                id: 21,
+                context: "Hi, I am Kirana. I would like to tell you about my family. My family is small but warm. My father, Mr. Rahmad, is an English teacher. He is tall and wears glasses. He loves reading books. My mother, Mrs. Dewi, is a chef. She cooks delicious food for us every day. Her hobby is gardening. I also have a younger brother named Rizky. He is 8 years old. His favorite hobby is playing with Lego bricks. On weekends, we love spending time together in our living room.",
+                question: "21. What quality best describes Kirana's father based on his physical appearance and hobby?",
+                options: ["He looks studious and intellectual.", "He looks sporty and energetic.", "He looks funny and careless.", "He looks lazy and quiet."],
+                answer: 0,
+                explanation: "Seseorang yang memakai kacamata, berprofesi guru, dan hobi membaca digambarkan tampak tekun dan intelektual (studious and intellectual)."
+            },
+            {
+                id: 22,
+                context: "Hi, I am Kirana. I would like to tell you about my family. My family is small but warm. My father, Mr. Rahmad, is an English teacher. He is tall and wears glasses. He loves reading books. My mother, Mrs. Dewi, is a chef. She cooks delicious food for us every day. Her hobby is gardening. I also have a younger brother named Rizky. He is 8 years old. His favorite hobby is playing with Lego bricks. On weekends, we love spending time together in our living room.",
+                question: "22. Why does Kirana describe her family as 'small but warm'?",
+                options: ["Because they live in a very small house.", "Because there are only four members, and they enjoy spending good time together.", "Because her mother cooks hot food every day.", "Because her family members rarely talk to each other."],
+                answer: 1,
+                explanation: "Keluarga dikatakan 'small' karena terdiri dari 4 anggota dan 'warm' karena suka menghabiskan waktu berkualitas bersama."
+            },
+            {
+                id: 23,
+                context: "<b>STUDENT PROFILE CARD</b><br>• Name: Amanda Putri | Class: 7C - SMP Perdana<br>• Appearance: 155 cm (Slim build) | Long, straight, black hair | Bright brown eyes<br>• Personality: Friendly, helpful, and creative<br>• Favorites: Pastel blue | Crispy banana chips | Painting landscapes & digital illustrations",
+                question: "23. What class is Amanda in?",
+                options: ["7A", "7B", "7C", "7D"],
+                answer: 2,
+                explanation: "Pada kartu profil tertulis Class: 7C."
+            },
+            {
+                id: 24,
+                context: "<b>STUDENT PROFILE CARD</b><br>• Name: Amanda Putri | Class: 7C - SMP Perdana<br>• Appearance: 155 cm (Slim build) | Long, straight, black hair | Bright brown eyes<br>• Personality: Friendly, helpful, and creative<br>• Favorites: Pastel blue | Crispy banana chips | Painting landscapes & digital illustrations",
+                question: "24. What does Amanda look like?",
+                options: ["Short with curly black hair", "Slim with long, straight, black hair", "Tall with short brown hair", "Chubby with wavy black hair"],
+                answer: 1,
+                explanation: "Penampilannya adalah Slim build dengan rambut Long, straight, black hair."
+            },
+            {
+                id: 25,
+                context: "<b>STUDENT PROFILE CARD</b><br>• Name: Amanda Putri | Class: 7C - SMP Perdana<br>• Appearance: 155 cm (Slim build) | Long, straight, black hair | Bright brown eyes<br>• Personality: Friendly, helpful, and creative<br>• Favorites: Pastel blue | Crispy banana chips | Painting landscapes & digital illustrations",
+                question: "25. Which adjective describes Amanda’s personality?",
+                options: ["Shy and quiet", "Creative and helpful", "Lazy and careless", "Strict and serious"],
+                answer: 1,
+                explanation: "Kepribadiannya adalah Friendly, helpful, and creative."
+            },
+            {
+                id: 26,
+                context: "<b>STUDENT PROFILE CARD</b><br>• Name: Amanda Putri | Class: 7C - SMP Perdana<br>• Appearance: 155 cm (Slim build) | Long, straight, black hair | Bright brown eyes<br>• Personality: Friendly, helpful, and creative<br>• Favorites: Pastel blue | Crispy banana chips | Painting landscapes & digital illustrations",
+                question: "26. Based on the profile card, which project would be most suitable for Amanda?",
+                options: ["Leading a sports running match", "Designing the cover poster for the class magazine", "Organizing a cooking contest in the kitchen", "Solving difficult math equations on the board"],
+                answer: 1,
+                explanation: "Dengan bakat menggambar/lukis (Painting & illustrations), Amanda paling cocok mendesain poster majalah."
+            },
+            {
+                id: 27,
+                context: "My favorite room in my house is my bedroom. It is not very big, but it is very comfortable. The wall color is pastel green. There is a small desk near the window where I do my homework. On top of my desk, there is a table lamp, some notebooks, and _______ (27) favorite desk organizer. Beside the desk, there is a cozy bed with a soft pillow. I always keep my room _______ (28) by sweeping it every afternoon. I love my bedroom because it gives me peace when I feel _______ (29). I feel very _______ (30) every time I rest in my room.",
+                question: "27. Choose the best option for (27):",
+                options: ["my", "your", "his", "her"],
+                answer: 0,
+                explanation: "Subjek cerita adalah penulis (orang pertama/I), sehingga kata ganti kepunyaan yang sesuai adalah 'my'."
+            },
+            {
+                id: 28,
+                context: "My favorite room in my house is my bedroom. It is not very big, but it is very comfortable. The wall color is pastel green. There is a small desk near the window where I do my homework. On top of my desk, there is a table lamp, some notebooks, and _______ (27) favorite desk organizer. Beside the desk, there is a cozy bed with a soft pillow. I always keep my room _______ (28) by sweeping it every afternoon. I love my bedroom because it gives me peace when I feel _______ (29). I feel very _______ (30) every time I rest in my room.",
+                question: "28. Choose the best option for (28):",
+                options: ["messy", "clean", "dirty", "dark"],
+                answer: 1,
+                explanation: "Menyapu kamar setiap sore (sweeping it every afternoon) membuat kamar bersih (clean)."
+            },
+            {
+                id: 29,
+                context: "My favorite room in my house is my bedroom. It is not very big, but it is very comfortable. The wall color is pastel green. There is a small desk near the window where I do my homework. On top of my desk, there is a table lamp, some notebooks, and _______ (27) favorite desk organizer. Beside the desk, there is a cozy bed with a soft pillow. I always keep my room _______ (28) by sweeping it every afternoon. I love my bedroom because it gives me peace when I feel _______ (29). I feel very _______ (30) every time I rest in my room.",
+                question: "29. Choose the best option for (29):",
+                options: ["happy", "tired", "excited", "energetic"],
+                answer: 1,
+                explanation: "Kamar memberikan kedamaian ketika merasa lelah (tired)."
+            },
+            {
+                id: 30,
+                context: "My favorite room in my house is my bedroom. It is not very big, but it is very comfortable. The wall color is pastel green. There is a small desk near the window where I do my homework. On top of my desk, there is a table lamp, some notebooks, and _______ (27) favorite desk organizer. Beside the desk, there is a cozy bed with a soft pillow. I always keep my room _______ (28) by sweeping it every afternoon. I love my bedroom because it gives me peace when I feel _______ (29). I feel very _______ (30) every time I rest in my room.",
+                question: "30. Choose the best option for (30):",
+                options: ["bored", "relaxed", "angry", "afraid"],
+                answer: 1,
+                explanation: "Saat beristirahat di kamar, rasanya sangat santai/rileks (relaxed)."
+            }
+        ];
+
+        class QuizEngine {
+            constructor(questions) {
+                this.questions = questions;
+                this.soundFX = new SoundFX();
+                this.studentName = "";
+                this.studentClass = "";
+                this.currentIndex = 0;
+                this.score = 0;
+                this.correctCount = 0;
+                this.userAnswers = [];
+                this.isAnswered = false;
+            }
+
+            startQuiz() {
+                const nameInput = document.getElementById('student-name').value.trim();
+                const classInput = document.getElementById('student-class').value.trim();
+
+                if (!nameInput) {
+                    alert('Silakan masukkan Nama Lengkap terlebih dahulu.');
+                    return;
+                }
+
+                this.studentName = nameInput;
+                this.studentClass = classInput || "Kelas VII";
+
+                this.currentIndex = 0;
+                this.score = 0;
+                this.correctCount = 0;
+                this.userAnswers = [];
+                
+                document.getElementById('start-screen').classList.add('hidden');
+                document.getElementById('result-screen').classList.add('hidden');
+                document.getElementById('quiz-screen').classList.remove('hidden');
+
+                this.loadQuestion();
+            }
+
+            loadQuestion() {
+                this.isAnswered = false;
+                const q = this.questions[this.currentIndex];
+
+                // Update UI Header
+                document.getElementById('question-count').innerText = `Soal ${this.currentIndex + 1} / ${this.questions.length}`;
+                document.getElementById('score-display').innerText = this.score;
+
+                // Render Context (Passage)
+                const contextBox = document.getElementById('context-box');
+                if (q.context) {
+                    contextBox.innerHTML = q.context;
+                    contextBox.classList.remove('hidden');
+                } else {
+                    contextBox.classList.add('hidden');
+                }
+
+                // Render Question Text
+                document.getElementById('question-text').innerText = q.question;
+
+                // Render Options
+                const optionsContainer = document.getElementById('options-container');
+                optionsContainer.innerHTML = '';
+                
+                const labels = ['A', 'B', 'C', 'D'];
+                q.options.forEach((opt, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = `option-btn w-full text-left p-4 rounded-xl border-2 border-slate-200 bg-white font-semibold text-slate-700 flex items-center gap-3`;
+                    btn.innerHTML = `
+                        <span class="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 font-extrabold flex items-center justify-center text-sm shrink-0">${labels[idx]}</span>
+                        <span class="text-sm sm:text-base">${opt}</span>
+                    `;
+                    btn.onclick = () => this.handleAnswer(idx);
+                    optionsContainer.appendChild(btn);
+                });
+
+                // Reset Feedback & Next Button
+                document.getElementById('explanation-box').classList.add('hidden');
+                document.getElementById('next-btn-container').classList.add('hidden');
+            }
+
+            handleAnswer(selectedIdx) {
+                if (this.isAnswered) return;
+                this.isAnswered = true;
+
+                const q = this.questions[this.currentIndex];
+                const isCorrect = selectedIdx === q.answer;
+
+                // Save Answer
+                this.userAnswers.push({
+                    question: q,
+                    selected: selectedIdx,
+                    isCorrect: isCorrect
+                });
+
+                const optionBtns = document.getElementById('options-container').children;
+
+                if (isCorrect) {
+                    this.soundFX.playCorrect();
+                    this.score += 100;
+                    this.correctCount++;
+
+                    if (selectedIdx !== null) {
+                        optionBtns[selectedIdx].className = 'option-btn w-full text-left p-4 rounded-xl border-2 border-emerald-500 bg-emerald-50 font-bold text-emerald-800 flex items-center gap-3';
+                    }
+                } else {
+                    this.soundFX.playWrong();
+
+                    if (selectedIdx !== null) {
+                        optionBtns[selectedIdx].className = 'option-btn w-full text-left p-4 rounded-xl border-2 border-rose-500 bg-rose-50 font-bold text-rose-800 flex items-center gap-3';
+                    }
+                    optionBtns[q.answer].className = 'option-btn w-full text-left p-4 rounded-xl border-2 border-emerald-500 bg-emerald-50 font-bold text-emerald-800 flex items-center gap-3';
+                }
+
+                // Show Explanation
+                const expBox = document.getElementById('explanation-box');
+                expBox.innerHTML = `<strong><i class="fa-solid fa-lightbulb"></i> Pembahasan:</strong> ${q.explanation}`;
+                expBox.className = `mt-4 p-4 rounded-xl text-sm font-medium ${isCorrect ? 'bg-emerald-100 text-emerald-900 border border-emerald-200' : 'bg-rose-100 text-rose-900 border border-rose-200'}`;
+                expBox.classList.remove('hidden');
+
+                // Disable all buttons
+                Array.from(optionBtns).forEach(btn => btn.disabled = true);
+
+                // Show Next Button
+                document.getElementById('next-btn-container').classList.remove('hidden');
+            }
+
+            nextQuestion() {
+                this.currentIndex++;
+                if (this.currentIndex < this.questions.length) {
+                    this.loadQuestion();
+                } else {
+                    this.showResults();
+                }
+            }
+
+            showResults() {
+                document.getElementById('quiz-screen').classList.add('hidden');
+                document.getElementById('result-screen').classList.remove('hidden');
+
+                const accuracy = Math.round((this.correctCount / this.questions.length) * 100);
+                const grade = Math.round((this.correctCount / this.questions.length) * 100);
+
+                // Fill Student Info
+                document.getElementById('res-student-name').innerText = this.studentName;
+                document.getElementById('res-student-class').innerText = this.studentClass;
+                document.getElementById('res-date').innerText = new Date().toLocaleDateString('id-ID', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric'
+                });
+
+                // Fill Scores
+                document.getElementById('final-grade').innerText = grade;
+                document.getElementById('final-correct').innerText = `${this.correctCount} / ${this.questions.length}`;
+                document.getElementById('final-accuracy').innerText = `${accuracy}%`;
+
+                // Build Review Items
+                const reviewList = document.getElementById('review-list');
+                reviewList.innerHTML = '';
+
+                this.userAnswers.forEach((ans, idx) => {
+                    const labels = ['A', 'B', 'C', 'D'];
+                    const userLabel = ans.selected !== null ? `${labels[ans.selected]}. ${ans.question.options[ans.selected]}` : 'Tidak dijawab';
+                    const correctLabel = `${labels[ans.question.answer]}. ${ans.question.options[ans.question.answer]}`;
+
+                    const item = document.createElement('div');
+                    item.className = `p-4 rounded-xl border ${ans.isCorrect ? 'bg-emerald-50/60 border-emerald-200' : 'bg-rose-50/60 border-rose-200'}`;
+                    item.innerHTML = `
+                        <p class="font-bold text-slate-800 text-sm mb-1">${ans.question.question}</p>
+                        <p class="text-xs mb-1 ${ans.isCorrect ? 'text-emerald-700' : 'text-rose-700'} font-semibold">
+                            Jawaban Siswa: ${userLabel} ${ans.isCorrect ? '<i class="fa-solid fa-circle-check"></i>' : '<i class="fa-solid fa-circle-xmark"></i>'}
+                        </p>
+                        ${!ans.isCorrect ? `<p class="text-xs text-emerald-700 font-semibold mb-1">Jawaban Benar: ${correctLabel}</p>` : ''}
+                        <p class="text-xs text-slate-600 bg-white/80 p-2 rounded border border-slate-200 mt-2"><strong>Pembahasan:</strong> ${ans.question.explanation}</p>
+                    `;
+                    reviewList.appendChild(item);
+                });
+            }
+
+            toggleReview() {
+                const container = document.getElementById('review-container');
+                container.classList.toggle('hidden');
+            }
+
+            restartQuiz() {
+                document.getElementById('review-container').classList.add('hidden');
+                document.getElementById('result-screen').classList.add('hidden');
+                document.getElementById('start-screen').classList.remove('hidden');
+            }
+        }
+
+        // Initialize App Global Instance
+        const quizApp = new QuizEngine(questionsData);
+    </script>
+</body>
+</html>
